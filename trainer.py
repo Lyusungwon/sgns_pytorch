@@ -110,8 +110,7 @@ def train(args):
 
     if args.multi_gpu:
         print("Let's use", args.num_gpu, "GPUs!")
-        or_model = model.to(device)
-        model = nn.DataParallel(model)
+        model = nn.DataParallel(model, device_ids=[i for i in range(args.num_gpu)])
     model = model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
