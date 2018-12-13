@@ -1,3 +1,4 @@
+import os
 import argparse
 import torch
 from datetime import datetime
@@ -25,7 +26,7 @@ def get_config():
     train_arg.add_argument('--device', default=0, type=int)
     train_arg.add_argument('--batch-size', default=64, type=int, help='mini-batch size (default: 64)')
     train_arg.add_argument('--epochs', default=128, type=int, help='number of total epochs (default: 10)')
-    train_arg.add_argument('--lr', default=0.025, type=float, help='learning rate (default: 0.0002)')
+    train_arg.add_argument('--lr', default=1e-4, type=float, help='learning rate (default: 0.0002)')
     train_arg.add_argument('--log-interval', default=100, type=int)
     train_arg.add_argument('--save-interval', default=10, type=int)
     train_arg.add_argument('--timestamp', default=datetime.now().strftime("%y%m%d%H%M%S"), type=str)
@@ -51,4 +52,5 @@ def get_config():
         model.load_state_dict(torch.load(args.log_dir + args.load_model, map_location=lambda storage,loc: storage))
         args.timestamp = args.load_model_code[:12]
         print('Model loaded')
+    args.log_dir = os.path.join(args.log_dir, args.timestamp + '_' + args.config)
     return args
