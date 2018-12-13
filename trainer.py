@@ -34,7 +34,6 @@ class Trainer(object):
             self.world_size = 1
 
     def average_gradients(self):
-        print("average")
         for p in self.model.parameters():
             if p.grad is not None:
                 tensor = p.grad.data
