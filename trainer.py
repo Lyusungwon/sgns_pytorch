@@ -80,14 +80,12 @@ def evaluation(args, writer, model, device, text_loader, k):
     writer.add_scalars('Analogy score', ana_score, k)
     writer.add_scalars('Analogy known', ana_known, k)
 
-def plot_embedding(args, model, text_loader, device, epoch, writer):
-    writer = SummaryWriter(args.log_dir + args.timestamp + '_' + args.config + '/' + str(epoch))
+def plot_embedding(args, model, text_loader):
     vocabs = text_loader.vocabs
     tokenized = [text_loader.word2idx[vocab] for vocab in vocabs]
     tokenized= torch.LongTensor(tokenized)
-    features = model.get_center_embedding(tokenized.to(device))
-    writer.add_embedding(features, metadata=vocabs)
-    print("plot embedding")
+    features = model.center_embedding(tokenized.to(args.device))
+    return features
 
 def init_process(args):
     distributed.init_process_group(
@@ -108,7 +106,7 @@ def train(args):
     if args.multi_gpu:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    model= model.to(device)
+    model = model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     writer = SummaryWriter(args.log_dir)
@@ -125,6 +123,10 @@ def train(args):
         if epoch % args.save_interval == 0:
             # plot_embedding(args, model, text_loader, device, epoch, writer)
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
+
+            features = plot_embedding(args, model, text_loader)
+            writer.add_embedding(features, metadata=vocabs, epoch)
+
 
 if __name__ =='__main__':
     train(get_config())
