@@ -54,7 +54,6 @@ class Trainer(object):
             loss.backward()
             if self.multi_node:
                 self.average_gradients()
-            print("back")
             self.optimizer.step()
             self.monitor_loss += loss.item()
             if i % self.args.log_interval == 0:
