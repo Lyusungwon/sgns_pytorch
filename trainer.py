@@ -50,8 +50,8 @@ class Trainer(object):
             center = center.to(self.device)
             context = context.to(self.device)
             neg = neg.to(self.device)
-            loss = self.model(center, context, neg)
-            loss.sum().backward()
+            loss = self.model(center, context, neg).sum()
+            loss.backward()
             if self.multi_node:
                 self.average_gradients()
             self.optimizer.step()
