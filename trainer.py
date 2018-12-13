@@ -116,13 +116,10 @@ def train(args):
         print("Let's use", args.num_gpu, "GPUs!")
         model = nn.DataParallel(model, device_ids=[i for i in range(args.num_gpu)])
     model = model.to(device)
-    print("Model made")
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     writer = SummaryWriter(args.log_dir)
     trainer = Trainer(args, model, optimizer, writer, text_loader)
-    print("train start")
     for epoch in range(args.epochs):
-        print(epoch)
         trainer.monitor_loss = 0
         trainer.epoch = epoch
         start_time = time.time()
