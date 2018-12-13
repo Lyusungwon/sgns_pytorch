@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pack_sequence, pad_sequence
 from torch.utils.data import DataLoader
-from dataset import TextDataset, TestDataset, PretrainedDataset
+from dataset import TextDataset
 from random import Random
 from torch import distributed, nn
 # device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
@@ -77,54 +77,24 @@ class DataParitioner(object):
         return Partition(self.data, self.partitions[partition])
 
 class TextDataLoader(DataLoader):
-    def __init__(self, data_dir, dataset, batch_size, window_size, ns_size, is_character, num_workers, remove_th, subsample_th, multinode):
-        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th, is_character)
+    def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th):
+        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th)
         self.vocabs = self.dataset.vocabs
-        if is_character:
-            self.char2idx = self.dataset.char2idx
-        else:
-            self.word2idx = self.dataset.word2idx
+        self.word2idx = self.dataset.word2idx
         if multinode:
             size = distributed.get_world_size()
             batch_size = int(batch_size / float(size))
             partition_sizes = [1.0 / size for _ in range(size)]
             partition = DataParitioner(self.dataset, partition_sizes)
             self.dataset = partition.use(distributed.get_rank())
-        if is_character:
-            super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, collate_fn=collate_text, shuffle=True)
-        else:
-            super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
-
-class TestDataLoader(DataLoader):
-    def __init__(self, data_dir, batch_size):
-        self.dataset = TestDataset(data_dir)
-        super(TestDataLoader, self).__init__(self.dataset, batch_size, collate_fn=collate_word, shuffle=True)
-
-class PretrainedDataLoader(DataLoader):
-    def __init__(self, data_dir, batch_size, is_ngram):
-        self.dataset = PretrainedDataset(data_dir, is_ngram)
-        super(PretrainedDataLoader, self).__init__(self.dataset, batch_size, collate_fn=collate_pretrained, shuffle=True)
+        super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
 
 
 if __name__ == '__main__':
-    # is_character = False
-    # text_loader = TextDataLoader('./data', 'toy/merge.txt', 10, 5, 5, is_character)
-    # if is_character:
-    #     for i, (padded_center, center_list, padded_context, context_list, neg) in enumerate(text_loader):
-    #         print(padded_center)
-    #         print(center_list)
-    #         print(padded_context)
-    #         print(context_list)
-    #         print(neg)
-    #         if i > 10:
-    #             break
-    # else:
-    #     for i, (center_word, context_word, ns_words) in enumerate(text_loader):
-    #         print(center_word)
-    #         print(context_word)
-    #         print(ns_words)
-    #         if i > 10:
-    #             break
-    test_loader = PretrainedDataLoader('./data', 12, False)
-    for data in test_loader:
-        print(data)
+    text_loader = TextDataLoader(32, False, 1, '/home/sungwonlyu/data/corpus', 'the_lord_of_the_rings.txt', 5, 7, 5, 1e-04)
+    for i, (center_word, context_word, ns_words) in enumerate(text_loader):
+        print(center_word)
+        print(context_word)
+        print(ns_words)
+        if i > 10:
+            break
