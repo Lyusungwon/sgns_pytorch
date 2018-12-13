@@ -12,3 +12,4 @@ corpus/
 *.ipynb
 .vscode/
 classfication.py
+__pycache__
