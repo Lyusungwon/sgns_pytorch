@@ -125,7 +125,7 @@ def train(args):
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
 
             features = plot_embedding(args, model.module, text_loader)
-            writer.add_embedding(features, metadata=vocabs, global_step=epoch)
+            writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
 
 if __name__ =='__main__':
