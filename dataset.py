@@ -18,6 +18,8 @@ import time
 import csv
 from torch.utils.data import DataLoader
 import torch.nn as nn
+from nltk.stem import PorterStemmer
+# from nltk.tokenize import word_tokenize
 
 def timefn(fn):
     def wrap(*args):
@@ -27,6 +29,7 @@ def timefn(fn):
         print("@timefn:{} took {} seconds".format(fn.__name__, t2-t1))
         return result
     return wrap
+
 
 class TextDataset(Dataset):
     def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th):
@@ -38,7 +41,7 @@ class TextDataset(Dataset):
         self.ns_size = ns_size
         self.rm_th = remove_th
         self.subsam_th = subsam_th
-        self.stopwords = set()
+        self.stopwords = set(stopwords.words('english'))
         if not self.is_data_exist():
             self.make_dataset()
 
@@ -57,6 +60,7 @@ class TextDataset(Dataset):
     def preprocess_counter(self, tokenized):
         tokenized = reduce(operator.concat, tokenized)
         cnt = Counter(tokenized)
+        print(cnt)
         #remove small words
         small_words = [key for key, value in cnt.items() if value < self.rm_th]
         for word in small_words:
@@ -67,6 +71,7 @@ class TextDataset(Dataset):
         rm_words = np.array(list(cnt.keys()))[rm_idx]
         for word in rm_words:
             cnt.pop(word, None)
+        print(cnt)
         # vocabs
         self.vocabs = list(cnt.keys())
         # calculate distribution
@@ -79,6 +84,7 @@ class TextDataset(Dataset):
     def make_dataset(self):
         text = open(self.dataset_dir, encoding="utf-8").read().lower().strip()
         print("Start to make data")
+        # words = word_tokenize(text)
         tokenized_text = self.tokenize(text)
         print("compelete tokenize")
         self.cnt = self.preprocess_counter(tokenized_text)
@@ -104,13 +110,15 @@ class TextDataset(Dataset):
     
     @timefn
     def tokenize(self, text):
+        ps = PorterStemmer()
         text = re.sub('<.*>'," ", text)
         text = re.sub('[^A-Za-z.]+', " ", text)
         text = text.split(".")
-        tokens_list=[]
+        tokens_list = []
         for sen in text:
-            tokens=[]
+            tokens = []
             for word in sen.split():
+                word = ps.stem(word)
                 if word not in self.stopwords:
                     tokens.append(word)
             tokens_list.append(tokens)

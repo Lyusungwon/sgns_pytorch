@@ -106,7 +106,7 @@ def train(args):
                                  args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th)
     model = SGNS(len(text_loader.dataset.vocabs), args.embed_size)
     if args.multi_gpu:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        print("Let's use", args.num_gpu, "GPUs!")
         model = nn.DataParallel(model, device_ids=[i for i in range(args.num_gpu)])
     model = model.to(device)
 
@@ -127,6 +127,7 @@ def train(args):
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
 
             features = plot_embedding(args, model, text_loader)
+            print(text_loader.vocabs)
             writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
 
