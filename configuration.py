@@ -37,14 +37,14 @@ def get_config():
     train_arg.add_argument('--multi-node', action='store_true')
     train_arg.add_argument('--multi-gpu', action='store_true')
     train_arg.add_argument('--num-gpu', default=1, type=int)
-    train_arg.add_argument('--num-workers', default=0, type=int)
+    train_arg.add_argument('--num-workers', default=20, type=int)
     train_arg.add_argument('--backend', default='nccl', type=str)
     train_arg.add_argument('--init-method', default='nccl://deepspark.snu.ac.kr', type=str)
     train_arg.add_argument('--rank', type=int)
     train_arg.add_argument('--world-size', type=int)
     args = parser.parse_args()
-    args.device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
-    # args.device = torch.device('cpu')
+    # args.device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cpu')
     config_list = [args.model_name, args.embed_size, \
                    args.dataset, args.window_size, args.neg_sample_size,\
                    args.batch_size, args.epochs, args.lr, args.multi_gpu, args.num_gpu]
