@@ -12,8 +12,9 @@ from torch import distributed, nn
 class Partition(object):
     def __init__(self, data, index):
         self.data = data
+        self.vocabs = data.vocabs
         self.index = index
-         
+
     def __len__(self):
         return len(self.index)
     
