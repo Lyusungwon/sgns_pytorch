@@ -60,7 +60,6 @@ class TextDataset(Dataset):
     def preprocess_counter(self, tokenized):
         tokenized = reduce(operator.concat, tokenized)
         cnt = Counter(tokenized)
-        print(cnt)
         #remove small words
         small_words = [key for key, value in cnt.items() if value < self.rm_th]
         for word in small_words:
@@ -71,7 +70,6 @@ class TextDataset(Dataset):
         rm_words = np.array(list(cnt.keys()))[rm_idx]
         for word in rm_words:
             cnt.pop(word, None)
-        print(cnt)
         # vocabs
         self.vocabs = list(cnt.keys())
         # calculate distribution

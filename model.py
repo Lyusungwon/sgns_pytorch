@@ -29,6 +29,9 @@ class SGNS(nn.Module):
         ns = self.context_embedding(ns) #[32,5,128]
         return - (self.pos_loss(center, context) + self.neg_loss(center, ns))
 
+    def get_embedding(self, center):
+        return self.center_embedding(center)
+
 
 if __name__=='__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

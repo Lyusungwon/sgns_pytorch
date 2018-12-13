@@ -50,8 +50,7 @@ def get_config():
                    args.batch_size, args.epochs, args.lr, args.multi_gpu, args.num_gpu]
     args.config = '_'.join(list(map(str, config_list))).replace("/", ".")
     if args.load_model is not None:
-        model.load_state_dict(torch.load(args.log_dir + args.load_model, map_location=lambda storage,loc: storage))
-        args.timestamp = args.load_model_code[:12]
+        args.timestamp = args.load_model[:12]
         print('Model loaded')
     args.log_dir = os.path.join(args.log_dir, args.timestamp + '_' + args.config)
     return args

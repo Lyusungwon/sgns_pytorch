@@ -105,8 +105,12 @@ def train(args):
     text_loader = TextDataLoader(args.batch_size, args.multi_node, args.num_workers, args.data_dir, args.dataset,
                                  args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th)
     model = SGNS(len(text_loader.dataset.vocabs), args.embed_size)
+    if args.load_model is not None:
+        model.load_state_dict(torch.load(args.log_dir + args.load_model, map_location=lambda storage,loc: storage))
+
     if args.multi_gpu:
         print("Let's use", args.num_gpu, "GPUs!")
+        or_model = model.to(device)
         model = nn.DataParallel(model, device_ids=[i for i in range(args.num_gpu)])
     model = model.to(device)
 
@@ -127,7 +131,6 @@ def train(args):
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
 
             features = plot_embedding(args, model, text_loader)
-            print(text_loader.vocabs)
             writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
 
