@@ -53,7 +53,8 @@ class TextDataLoader(DataLoader):
             partition_sizes = [1.0 / size for _ in range(size)]
             partition = DataParitioner(self.dataset, partition_sizes)
             self.dataset = partition.use(distributed.get_rank())
-        super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
+            print("Data loaded")
+        super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle = True)
 
 
 if __name__ == '__main__':

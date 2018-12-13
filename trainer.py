@@ -34,6 +34,7 @@ class Trainer(object):
             self.world_size = 1
 
     def average_gradients(self):
+        print("average")
         for p in self.model.parameters():
             if p.grad is not None:
                 tensor = p.grad.data
@@ -54,6 +55,7 @@ class Trainer(object):
             loss.backward()
             if self.multi_node:
                 self.average_gradients()
+            print("back")
             self.optimizer.step()
             self.monitor_loss += loss.item()
             if i % self.args.log_interval == 0:
@@ -114,11 +116,13 @@ def train(args):
         print("Let's use", args.num_gpu, "GPUs!")
         model = nn.DataParallel(model, device_ids=[i for i in range(args.num_gpu)])
     model = model.to(device)
-
+    print("Model made")
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     writer = SummaryWriter(args.log_dir)
     trainer = Trainer(args, model, optimizer, writer, text_loader)
+    print("train start")
     for epoch in range(args.epochs):
+        print(epoch)
         trainer.monitor_loss = 0
         trainer.epoch = epoch
         start_time = time.time()
