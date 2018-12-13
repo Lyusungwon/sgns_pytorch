@@ -61,7 +61,7 @@ class Trainer(object):
                     self.epoch, i * int(self.args.batch_size/self.world_size), len(self.text_loader.dataset),
                     100. * i / len(self.text_loader),
                     loss/self.args.batch_size*self.world_size))
-                step = i // self.args.log_interval + self.epoch * len(self.text_loader) // self.args.log_interval
+                step = i // self.args.log_interval + self.epoch * (len(self.text_loader) // self.args.log_interval)
                 self.writer.add_scalar('Batch loss', loss / self.args.batch_size*self.world_size, step)
                 # plot_embedding(args, model, text_loader, writer, device)
         return self.monitor_loss
