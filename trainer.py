@@ -90,7 +90,7 @@ def plot_embedding(args, model, text_loader):
     return features
 
 def init_process(args):
-    os.environ['MASTER_ADDR'] = 'deepspark.ac.kr'
+    os.environ['MASTER_ADDR'] = 'deepspark.snu.ac.kr'
     os.environ['MASTER_PORT'] = '19372'
     distributed.init_process_group(
         backend=args.backend,
