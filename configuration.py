@@ -15,7 +15,7 @@ def get_config():
     model_arg.add_argument('--embed-size', default=200, type=int)
 
     data_arg = parser.add_argument_group('Data')
-    data_arg.add_argument('--data-dir', default='.data', type=str, help='directory of training/testing data (default: datasets)')
+    data_arg.add_argument('--data-dir', default='./data', type=str, help='directory of training/testing data (default: datasets)')
     data_arg.add_argument('--dataset', default='the_lord_of_the_rings.txt', type=str)
     data_arg.add_argument('--window-size', default=5, type=int)
     data_arg.add_argument('--neg-sample-size', default=10, type=int)
