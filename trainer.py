@@ -51,7 +51,7 @@ class Trainer(object):
             context = context.to(self.device)
             neg = neg.to(self.device)
             loss = self.model(center, context, neg)
-            loss.backward()
+            loss.sum().backward()
             if self.multi_node:
                 self.average_gradients()
             self.optimizer.step()
@@ -83,18 +83,9 @@ def evaluation(args, writer, model, device, text_loader, k):
 def plot_embedding(args, model, text_loader, device, epoch, writer):
     writer = SummaryWriter(args.log_dir + args.timestamp + '_' + args.config + '/' + str(epoch))
     vocabs = text_loader.vocabs
-    if args.model_name == 'sgns':
-        tokenized = [text_loader.word2idx[vocab] for vocab in vocabs]
-        tokenized= torch.LongTensor(tokenized)
-        features = model.get_center_embedding(tokenized.to(device))
-    else:
-        tokenized = [[text_loader.char2idx[character] for character in vocab] for vocab in vocabs]
-        tokenized.sort(key=lambda x: len(x), reverse=True)
-        token_lengths = list(map(len, tokenized))
-        token_tensor = torch.zeros(len(tokenized), max(token_lengths), dtype=torch.long)
-        for idx, (token, tokenlen) in enumerate(zip(tokenized, token_lengths)):
-            token_tensor[idx, :tokenlen] = torch.LongTensor(token)
-        features = model.get_center_embedding(token_tensor.to(device), token_lengths)
+    tokenized = [text_loader.word2idx[vocab] for vocab in vocabs]
+    tokenized= torch.LongTensor(tokenized)
+    features = model.get_center_embedding(tokenized.to(device))
     writer.add_embedding(features, metadata=vocabs)
     print("plot embedding")
 

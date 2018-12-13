@@ -27,7 +27,6 @@ class SGNS(nn.Module):
         center = self.center_embedding(center)
         context = self.context_embedding(context)
         ns = self.context_embedding(ns) #[32,5,128]
-        print(center.size(), context.size(), ns.size())
         return - (self.pos_loss(center, context) + self.neg_loss(center, ns))
 
 
