@@ -81,9 +81,11 @@ def evaluation(args, writer, model, device, text_loader, k):
     writer.add_scalars('Analogy known', ana_known, k)
 
 def plot_embedding(args, model, text_loader):
+    if args.multi_gpu:
+        model = model.module
     vocabs = text_loader.vocabs
     tokenized = [text_loader.word2idx[vocab] for vocab in vocabs]
-    tokenized= torch.LongTensor(tokenized)
+    tokenized = torch.LongTensor(tokenized)
     features = model.center_embedding(tokenized.to(args.device))
     return features
 
@@ -124,7 +126,7 @@ def train(args):
             # plot_embedding(args, model, text_loader, device, epoch, writer)
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
 
-            features = plot_embedding(args, model.module, text_loader)
+            features = plot_embedding(args, model, text_loader)
             writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
 
