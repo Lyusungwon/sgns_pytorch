@@ -112,7 +112,7 @@ class TextDataset(Dataset):
         print(len(word_pairs))
         pmi_matrix = self.pmi(pmi, len(word_text))
         # embedding = self.factorization(pmi_matrix)
-        print(embedding.shape)
+        # print(embedding.shape)
         saves = word_pairs, self.vocabs, word2idx, idx2word, self.probs, pmi_matrix
         with open(self.file_dir, 'wb') as f:
             cPickle.dump(saves, f, protocol=2)
