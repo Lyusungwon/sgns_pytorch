@@ -24,7 +24,7 @@ class Partition(object):
 
 
 class DataParitioner(object):
-    def __init__(self, data, sizes, seed=1234):
+    def __init__(self, data, sizes, seed=2):
         self.data = data
         self.partitions = []
         rng = Random()
@@ -56,7 +56,10 @@ class TextDataLoader(DataLoader):
         super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
 
     def resample(self):
-        self.dataset.negative_sampling()
+        if multinode:
+            self.dataset.data.negative_sampling()
+        else:
+            self.dataset.negative_sampling()
 
 
 if __name__ == '__main__':
