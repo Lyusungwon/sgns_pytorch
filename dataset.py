@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 from collections import defaultdict
 import nltk
-# nltk.download('wordnet')
+nltk.download('wordnet')
 
 
 def timefn(fn):
@@ -50,8 +50,7 @@ class TextDataset(Dataset):
 
         with open(self.file_dir, 'rb') as f:
             # self.word_pairs, self.neg_samples, self.vocabs, self.word2idx, self.idx2word = pkl.load(f)
-            self.word_pairs, self.vocabs, self.word2idx, self.idx2word, self.probs, embedding = pkl.load(f)
-            self.ground_truth = np.matmul(embedding, embedding.T)
+            self.word_pairs, self.vocabs, self.word2idx, self.idx2word, self.probs, self.ground_truth = pkl.load(f)
 
     def is_data_exist(self):
         if os.path.isfile(self.file_dir):
@@ -112,9 +111,9 @@ class TextDataset(Dataset):
         # neg_samples = [[word2idx[word] for word in neg_sample] for neg_sample in neg_samples]
         print(len(word_pairs))
         pmi_matrix = self.pmi(pmi, len(word_text))
-        embedding = self.factorization(pmi_matrix)
+        # embedding = self.factorization(pmi_matrix)
         print(embedding.shape)
-        saves = word_pairs, self.vocabs, word2idx, idx2word, self.probs, embedding
+        saves = word_pairs, self.vocabs, word2idx, idx2word, self.probs, pmi_matrix
         with open(self.file_dir, 'wb') as f:
             cPickle.dump(saves, f, protocol=2)
             print("Data saved in {}".format(self.data_file))

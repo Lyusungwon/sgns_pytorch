@@ -34,9 +34,9 @@ def get_config():
     train_arg.add_argument('--log-dir', default='saved/runs/', type=str)
 
     #for large dataset dataloader
-    train_arg.add_argument('--multi-node', action='store_true')
     train_arg.add_argument('--multi-gpu', action='store_true')
     train_arg.add_argument('--num-gpu', default=1, type=int)
+    train_arg.add_argument('--multi-node', action='store_true')
     train_arg.add_argument('--num-workers', default=20, type=int)
     train_arg.add_argument('--backend', default='nccl', type=str)
     train_arg.add_argument('--init-method', default='nccl://deepspark.snu.ac.kr', type=str)
