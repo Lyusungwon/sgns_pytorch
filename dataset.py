@@ -12,7 +12,6 @@ from collections import defaultdict
 import nltk
 nltk.download('wordnet')
 
-
 def timefn(fn):
     def wrap(*args):
         t1 = time.time()
@@ -22,12 +21,11 @@ def timefn(fn):
         return result
     return wrap
 
-
 class TextDataset(Dataset):
-    def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th, embedding_size, seed):
+    def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th, embedding_size, is_character, seed):
         np.random.seed(seed)
         self.dataset_dir = os.path.join(data_dir, dataset)
-        data_config_list = [dataset, window_size, ns_size, remove_th, subsam_th, embedding_size]
+        data_config_list = [dataset, window_size, ns_size, remove_th, subsam_th, embedding_size, is_character]
         self.data_file = '_'.join(map(str, data_config_list)) + '.pkl'
         self.file_dir = os.path.join(data_dir, self.data_file)
         self.window_size = window_size
@@ -35,13 +33,18 @@ class TextDataset(Dataset):
         self.rm_th = remove_th
         self.subsam_th = subsam_th
         self.embedding_size = embedding_size
+        self.is_character = is_character
         self.stopwords = set(stopwords.words('english'))
         if not self.is_data_exist():
             self.make_dataset()
 
         with open(self.file_dir, 'rb') as f:
+            if is_character:
+                # self.word_pairs, self.vocabs, self.char2idx, self.idx2char = joblib.load(f)
+                self.word_pairs, self.vocabs, self.char2idx, self.idx2char, self.probs, self.ground_truth = pkl.load(f)
             # self.word_pairs, self.neg_samples, self.vocabs, self.word2idx, self.idx2word = pkl.load(f)
-            self.word_pairs, self.vocabs, self.word2idx, self.idx2word, self.probs, self.ground_truth = pkl.load(f)
+            else:
+                self.word_pairs, self.vocabs, self.word2idx, self.idx2word, self.probs, self.ground_truth = pkl.load(f)
 
     def is_data_exist(self):
         if os.path.isfile(self.file_dir):
@@ -86,7 +89,10 @@ class TextDataset(Dataset):
         print("Start to make data again")
         tokenized_text, word_text = self.tokenize(text)
         print("complete tokenize again")
-        word2idx, idx2word = self.map_word_idx(self.vocabs)
+        if self.is_character:
+            self.char2idx, self.idx2char = self.map_char_idx()
+        else:
+            word2idx, idx2word = self.map_word_idx(self.vocabs)
         word_pairs = []
         pmi = defaultdict(lambda : defaultdict(int))
         for sentence in tokenized_text:
@@ -97,17 +103,44 @@ class TextDataset(Dataset):
                     if context_word_idx < 0 or context_word_idx >= len(sentence) or context_word_idx == i:
                         continue
                     pmi[word][sentence[context_word_idx]] += 1
-                    word_pairs.append((word2idx[word], word2idx[sentence[context_word_idx]]))
+                    if self.is_character:
+                        word_pairs.append(self.make_chars((word, sentence[context_word_idx])))
+                    else:
+                        word_pairs.append((word2idx[word], word2idx[sentence[context_word_idx]]))
         # neg_samples = self.negative_sampling(len(word_pairs))
         # neg_samples = [[word2idx[word] for word in neg_sample] for neg_sample in neg_samples]
         print(len(word_pairs))
         pmi_matrix = self.pmi(pmi, len(word_text))
         # embedding = self.factorization(pmi_matrix)
         # print(embedding.shape)
-        saves = word_pairs, self.vocabs, word2idx, idx2word, self.probs, pmi_matrix
+        if self.is_character:
+            saves = word_pairs, self.vocabs, self.char2idx, self.idx2char, self.probs, pmi_matrix
+        else:
+            saves = word_pairs, self.vocabs, word2idx, idx2word, self.probs, pmi_matrix
         with open(self.file_dir, 'wb') as f:
             cPickle.dump(saves, f, protocol=2)
             print("Data saved in {}".format(self.data_file))
+
+    def map_char_idx(self):
+        alphabet = 'abcdefghijklmnopqrstuvwxyz'
+        char2idx = {}
+        idx2char = {}
+        for i in range(len(alphabet)):
+            char2idx[list(alphabet)[i]] = i+1
+            idx2char[i+1] = list(alphabet)[i]
+        return char2idx, idx2char
+
+    def make_chars(self, pairs):
+        center, context = pairs
+        center_idx = [self.char2idx[char] for char in list(center)]
+        context_idx = [self.char2idx[char] for char in list(context)]
+        return center_idx, context_idx
+    
+    def make_char(self, neg_samples):
+        negs_idx = []
+        for i in range(self.ns_size):
+            negs_idx.append([self.char2idx[char] for char in list(neg_samples[i])])
+        return negs_idx
 
     @timefn
     def pmi(self, pmi, D):
@@ -162,8 +195,13 @@ class TextDataset(Dataset):
 
     @timefn
     def negative_sampling(self):
-        neg_samples = np.random.choice(range(len(self.vocabs)), size=len(self.word_pairs) * self.ns_size, replace=True, p=self.probs)
-        self.neg_samples = neg_samples.reshape(len(self.word_pairs), self.ns_size)
+        if self.is_character:
+            neg_samples = np.random.choice(self.vocabs, size=len(self.word_pairs) * self.ns_size, replace=True, p=self.probs)
+            neg_samples = neg_samples.reshape(len(self.word_pairs), self.ns_size)
+            self.neg_samples = [self.make_char(neg_sample) for neg_sample in neg_samples]
+        else:
+            neg_samples = np.random.choice(range(len(self.vocabs)), size=len(self.word_pairs) * self.ns_size, replace=True, p=self.probs)
+            self.neg_samples = neg_samples.reshape(len(self.word_pairs), self.ns_size)
 
     def _unicodeToAscii(self, s):
         return ''.join(
@@ -171,14 +209,45 @@ class TextDataset(Dataset):
             if unicodedata.category(c) != 'Mn')
 
     def __getitem__(self, idx):
-        center_idx, context_idx = self.word_pairs[idx]
-        negs_idx = self.neg_samples[idx]
-        center_idx, context_idx, negs_idx = torch.tensor(center_idx), torch.tensor(context_idx), torch.tensor(negs_idx)
+        if self.is_character:
+            center_idx, context_idx = self.word_pairs[idx]
+            negs_idx = self.neg_samples[idx]
+            center_idx, context_idx = torch.tensor(center_idx), torch.tensor(context_idx)
+            negs_tensor_idx = []
+            for i in range(self.ns_size):
+                negs_tensor_idx.append(torch.tensor(negs_idx[i]))
+            return center_idx, context_idx, negs_tensor_idx
+        else:    
+            center_idx, context_idx = self.word_pairs[idx]
+            negs_idx = self.neg_samples[idx]
+            center_idx, context_idx, negs_idx = torch.tensor(center_idx), torch.tensor(context_idx), torch.tensor(negs_idx)
         return center_idx, context_idx, negs_idx
 
     def __len__(self):
         return len(self.word_pairs)
 
+
+class EvalDataset(Dataset):
+    def __init__(self, data_dir):
+        self.file_dir = os.path.join(data_dir, 'harry_potter.txt_5_10_5_0.002_200_True.pkl')
+        with open(self.file_dir, 'rb') as f:
+            self.word_pairs, self.vocabs, self.char2idx, self.idx2char, self.probs, self.ground_truth = pkl.load(f)
+
+    def make_char_for_eval(self):
+        wordslist = list(self.vocabs)
+        word2char_idx=[]
+        for word in wordslist:
+            word2char_idx.append([self.char2idx[char] for char in list(word)])
+        return word2char_idx
+
+    def __getitem__(self, idx):
+        word2char_idx = self.make_char_for_eval()
+        char_idx = word2char_idx[idx]
+        char_idx = torch.tensor(char_idx)
+        return char_idx
+
+    def __len__(self):
+        return len(self.vocabs)
 
 if __name__ == '__main__':
     text_dataset = TextDataset('./data', 'harry_potter.txt', 5, 10, 5, 2e-3, 300)
