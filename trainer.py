@@ -46,6 +46,7 @@ class Trainer(object):
             else:
                 continue
 
+    @timefn
     def train_epoch(self):
         self.text_loader.resample()
         for i, (center, context, neg) in enumerate(self.text_loader):
