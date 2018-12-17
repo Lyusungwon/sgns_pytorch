@@ -1,8 +1,5 @@
-import sys
+import os
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import numpy as np
 from model import *
 from configuration import get_config
@@ -10,11 +7,7 @@ import torch.optim as optim
 from tensorboardX import SummaryWriter
 import time
 from dataloader import TextDataLoader
-import os
-import math 
-import csv
 from torch import distributed, nn
-from torch.utils.data.distributed import DistributedSampler
 
 
 def timefn(fn):

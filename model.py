@@ -1,11 +1,7 @@
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
-import numpy as np
 from dataloader import *
-import time 
 
 class SGNS(nn.Module):
     def __init__(self, vocab_size, embed_size):

@@ -1,23 +1,13 @@
-import sys, os
+import os
 import numpy as np
 import pickle as pkl
 import torch
 from torch.utils.data import Dataset, ConcatDataset
 import re
-import random
-import operator
-from functools import reduce
 from nltk.corpus import stopwords
-import bz2
 import _pickle as cPickle
-from multiprocessing import Process, Pool
-import multiprocessing as mp
 from collections import Counter
-from functools import wraps
 import time
-import csv
-from torch.utils.data import DataLoader
-import torch.nn as nn
 from collections import defaultdict
 import nltk
 nltk.download('wordnet')
@@ -35,7 +25,7 @@ def timefn(fn):
 
 class TextDataset(Dataset):
     def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th, embedding_size, seed):
-        np.random.seed(args.seed)
+        np.random.seed(seed)
         self.dataset_dir = os.path.join(data_dir, dataset)
         data_config_list = [dataset, window_size, ns_size, remove_th, subsam_th, embedding_size]
         self.data_file = '_'.join(map(str, data_config_list)) + '.pkl'

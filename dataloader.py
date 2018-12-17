@@ -1,12 +1,7 @@
-import sys, os
-import numpy as np
-import torch
-from torch.nn.utils.rnn import pack_sequence, pad_sequence
 from torch.utils.data import DataLoader
 from dataset import TextDataset
 from random import Random
 from torch import distributed, nn
-# device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 
 class Partition(object):

@@ -3,7 +3,6 @@ import argparse
 import torch
 from datetime import datetime
 from pathlib import Path
-import re
 home = str(Path.home())
 
 
