@@ -40,8 +40,7 @@ class Trainer(object):
         for p in self.model.parameters():
             if p.grad is not None:
                 tensor = p.grad.data
-                distributed.all_reduce(
-                    tensor, group=self.group, async_op=self.args.async)
+                distributed.all_reduce(tensor, group=self.group, async_op=self.args.async)
                 tensor /= float(self.world_size)
                 p.grad.data = tensor.to(self.args.device)
             else:
@@ -139,16 +138,17 @@ def train(args):
         trainer.epoch = epoch
         start_time = time.time()
         loss = trainer.train_epoch()
-        piploss = evaluate(args, model, text_loader)
-        print('====> Epoch: {} Average loss: {:.4f} / PIP loss: {:.4f} / Time: {:.4f}'.format(
-            epoch, loss / len(text_loader.dataset), piploss, time.time() - start_time))
-        writer.add_scalar('Epoch time', time.time() - start_time, epoch)
-        writer.add_scalar('PIP loss', piploss, epoch)
-        writer.add_scalar('Train loss', loss / len(text_loader.dataset), epoch)
-        if epoch % args.save_interval == 0:
-            torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
-            features = plot_embedding(args, model, text_loader)
-            writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
+        if not args.multi_node or (args.multi_node and distributed.get_rank == 0):
+            piploss = evaluate(args, model, text_loader)
+            print('====> Epoch: {} Average loss: {:.4f} / PIP loss: {:.4f} / Time: {:.4f}'.format(
+                epoch, loss / len(text_loader.dataset), piploss, time.time() - start_time))
+            writer.add_scalar('Epoch time', time.time() - start_time, epoch)
+            writer.add_scalar('PIP loss', piploss, epoch)
+            writer.add_scalar('Train loss', loss / len(text_loader.dataset), epoch)
+            if epoch % args.save_interval == 0:
+                torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
+                features = plot_embedding(args, model, text_loader)
+                writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
 
 if __name__ =='__main__':

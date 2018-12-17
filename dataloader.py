@@ -9,6 +9,7 @@ class Partition(object):
         self.data = data
         self.vocabs = data.vocabs
         self.index = index
+        self.ground_truth = data.ground_truth
 
     def __len__(self):
         return len(self.index)
@@ -22,7 +23,6 @@ class DataParitioner(object):
     def __init__(self, data, sizes, seed=2):
         self.data = data
         self.partitions = []
-        self.ground_truth = data.ground_truth
         rng = Random()
         rng.seed(seed)
         data_len = len(data)
