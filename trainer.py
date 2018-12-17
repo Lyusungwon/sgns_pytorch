@@ -67,7 +67,7 @@ class Trainer(object):
                     loss/self.args.batch_size*self.world_size, time.time() - start_time))
                 step = i // self.args.log_interval + self.epoch * (len(self.text_loader) // self.args.log_interval + 1)
                 self.writer.add_scalar('Batch loss', loss / self.args.batch_size*self.world_size, step)
-                start_time = time.time()
+            start_time = time.time()
         return self.monitor_loss
 
 
