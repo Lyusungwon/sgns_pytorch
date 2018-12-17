@@ -48,7 +48,7 @@ class Trainer(object):
             if p.grad is not None:
                 tensor = p.grad.data
                 distributed.all_reduce(
-                    tensor, op=distributed.reduce_op.SUM, group=self.group)
+                    tensor, group=self.group, async_op=args.async)
                 tensor /= float(self.world_size)
                 p.grad.data = tensor.to(self.args.device)
             else:

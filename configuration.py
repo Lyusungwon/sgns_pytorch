@@ -38,6 +38,7 @@ def get_config():
     train_arg.add_argument('--multi-gpu', action='store_true')
     train_arg.add_argument('--num-gpu', default=1, type=int)
     train_arg.add_argument('--multi-node', action='store_true')
+    train_arg.add_argument('--async', action='store_true')
     train_arg.add_argument('--num-workers', default=20, type=int)
     train_arg.add_argument('--backend', default='nccl', type=str)
     train_arg.add_argument('--init-method', default='nccl://deepspark.snu.ac.kr', type=str)
@@ -48,7 +49,8 @@ def get_config():
     # args.device = torch.device('cpu')
     config_list = [args.model_name, args.embed_size, \
                    args.dataset, args.window_size, args.neg_sample_size,\
-                   args.batch_size, args.epochs, args.lr, args.multi_gpu, args.num_gpu]
+                   args.batch_size, args.epochs, args.lr, args.multi_gpu, args.num_gpu,
+                   args.multi_node, args.async]
     args.config = '_'.join(list(map(str, config_list))).replace("/", ".")
     if args.load_model is not None:
         args.timestamp = args.load_model[:12]

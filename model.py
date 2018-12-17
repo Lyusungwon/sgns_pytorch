@@ -33,6 +33,130 @@ class SGNS(nn.Module):
         return self.center_embedding(center)
 
 
+class Generator(nn.Module):
+    def __init__(self, char_num, gen_embed_dim, hidden_size, num_layer, dropout, bidirectional, multigpu, device):
+        super(generator, self).__init__()
+        self.multigpu = multigpu
+        self.device = device
+        self.bidirectional = bidirectional
+        self.embedding = nn.Embedding(char_num, gen_embed_dim, padding_idx=0)
+        self.lstm = nn.LSTM(gen_embed_dim, hidden_size, num_layers=num_layer,
+                    dropout=dropout, batch_first = True, bidirectional=bidirectional)
+        for name, param in self.lstm.named_parameters():
+            if "bias" in name:
+                nn.init.constant_(param, 0.0)
+            else:
+                nn.init.xavier_normal_(param)
+
+    def sorting(self, x, x_len):
+        x_ordered = np.sort(x_len)[::-1]
+        sort_idx = np.argsort(x_len)[::-1]
+        unsort_idx = np.argsort(sort_idx)[::-1]
+        x_ordered = torch.from_numpy(x_ordered.copy()).to(self.device)
+        sort_idx= torch.from_numpy(sort_idx.copy()).to(self.device)
+        # sort_idx= torch.from_numpy(sort_idx.copy())
+        unsort_idx = torch.from_numpy(unsort_idx.copy()).to(self.device)
+        x = x.index_select(0, sort_idx)
+        return x, unsort_idx, x_ordered
+
+    def forward(self, x, x_len):
+        x, unsort_idx, x_ordered = self.sorting(x, x_len)
+        embedded = self.embedding(x)
+        embedded = pack_padded_sequence(embedded, x_ordered, batch_first = True)
+        output, (h,_) = self.lstm(embedded)
+        if self.bidirectional:
+            ordered_hidden_1 = h[-1].index_select(0, unsort_idx)
+            ordered_hidden_2 = h[-2].index_select(0, unsort_idx)
+            ordered_hidden = torch.cat((ordered_hidden_1,ordered_hidden_2), dim=1)
+            output_padded, _ = pad_packed_sequence(output, batch_first=True)
+            ordered_output = output_padded.index_select(0, unsort_idx)
+        else:
+            ordered_hidden = h[-1].index_select(0, unsort_idx)
+            output_padded, _ = pad_packed_sequence(output, batch_first=True)
+            ordered_output = output_padded.index_select(0, unsort_idx)
+        return ordered_hidden, ordered_output
+
+
+class word_embed_ng(nn.Module):
+    def __init__(self, char_num, gen_embed_dim, hidden_size, num_layer, dropout, fc_hidden, embed_size, k,
+                 bidirectional, multigpu, device, models):
+        super(word_embed_ng, self).__init__()
+        self.center_generator = generator(char_num, gen_embed_dim, hidden_size, num_layer, dropout, bidirectional,
+                                          multigpu, device)
+        self.context_generator = generator(char_num, gen_embed_dim, hidden_size, num_layer, dropout, bidirectional,
+                                           multigpu, device)
+        self.k = k
+        self.model_name = models
+        self.add_fc_cen = nn.Sequential(
+            nn.Linear(hidden_size, embed_size)
+        )
+        self.add_fc_con = nn.Sequential(
+            nn.Linear(hidden_size, embed_size)
+        )
+        self.add_fc_activation_cen = nn.Sequential(
+            nn.Linear(hidden_size, embed_size),
+            nn.Tanh()
+        )
+        self.add_fc_activation_con = nn.Sequential(
+            nn.Linear(hidden_size, embed_size),
+            nn.Tanh()
+        )
+        self.add_mlp_cen = nn.Sequential(
+            nn.Linear(hidden_size, fc_hidden),
+            nn.Tanh(),
+            nn.Linear(fc_hidden, embed_size)
+        )
+        self.add_mlp_con = nn.Sequential(
+            nn.Linear(hidden_size, fc_hidden),
+            nn.Tanh(),
+            nn.Linear(fc_hidden, embed_size)
+        )
+
+    def cal_loss(self, x, y, neg):
+        score_target = torch.bmm(x.unsqueeze(1), y.unsqueeze(2))
+        score_neg = torch.bmm(x.unsqueeze(1), neg.transpose(0, 1).transpose(1, 2))
+        loss = -F.logsigmoid(score_target).sum() + -F.logsigmoid(-score_neg).sum()
+        return loss
+
+    def forward(self, x, x_len, y, y_len, neg):
+        embedded_cen, _ = self.center_generator(x, x_len)
+        embedded_con, _ = self.context_generator(y, y_len)
+        if self.model_name == "fc_acti":
+            prediction = self.add_fc_activation_cen(embedded_cen)
+            target = self.add_fc_activation_con(embedded_con)
+            neg_output = []
+            for i in range(self.k):
+                embedded_neg, _ = self.context_generator(neg[i][0], neg[i][1])
+                neg_output.append(self.add_fc_activation_con(embedded_neg))
+        elif self.model_name == "fc":
+            prediction = self.add_fc_cen(embedded_cen)
+            target = self.add_fc_con(embedded_con)
+            neg_output = []
+            for i in range(self.k):
+                embedded_neg, _ = self.context_generator(neg[i][0], neg[i][1])
+                neg_output.append(self.add_fc_con(embedded_neg))
+        else:
+            prediction = self.add_mlp_cen(embedded_cen)
+            target = self.add_mlp_con(embedded_con)
+            neg_output = []
+            for i in range(self.k):
+                embedded_neg, _ = self.context_generator(neg[i][0], neg[i][1])
+                neg_output.append(self.add_mlp_con(embedded_neg))
+        neg_output_tensor = torch.stack(neg_output)
+        loss = self.cal_loss(prediction, target, neg_output_tensor)
+        return loss
+
+    def get_center_embedding(self, center, center_len):
+        embedded_cen, _ = self.center_generator(center, center_len)
+        if self.model_name == "fc_acti":
+            embedding = self.add_fc_activation_cen(embedded_cen)
+        elif self.model_name == "fc":
+            embedding = self.add_fc_cen(embedded_cen)
+        else:
+            embedding = self.add_mlp_cen(embedded_cen)
+        return embedding
+
+
 if __name__=='__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     text_loader = TextDataLoader('./data', 'toy/merge.txt', 8, 5, 5, True, 0, 5, 1e-04)
