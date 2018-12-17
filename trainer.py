@@ -46,7 +46,7 @@ class Trainer(object):
                 p.grad.data = tensor.to(self.args.device)
             else:
                 continue
-    
+
     @timefn
     def train_epoch(self):
         self.text_loader.resample()
