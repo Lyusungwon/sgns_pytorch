@@ -43,8 +43,8 @@ class DataParitioner(object):
 
 
 class TextDataLoader(DataLoader):
-    def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th):
-        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th)
+    def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size):
+        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size)
         self.vocabs = self.dataset.vocabs
         self.word2idx = self.dataset.word2idx
         if multinode:
@@ -53,11 +53,15 @@ class TextDataLoader(DataLoader):
             partition_sizes = [1.0 / size for _ in range(size)]
             partition = DataParitioner(self.dataset, partition_sizes)
             self.dataset = partition.use(distributed.get_rank())
-        super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle = True)
+        super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
+
+    def resample(self):
+        self.dataset.negative_sampling()
 
 
 if __name__ == '__main__':
-    text_loader = TextDataLoader(32, False, 1, '/home/sungwonlyu/data/corpus', 'the_lord_of_the_rings.txt', 5, 7, 5, 1e-04)
+    text_loader = TextDataLoader(32, False, 1, './data', 'harry_potter.txt', 5, 10, 5, 2e-3, 300)
+    text_loader.resample()
     for i, (center_word, context_word, ns_words) in enumerate(text_loader):
         print(center_word)
         print(context_word)

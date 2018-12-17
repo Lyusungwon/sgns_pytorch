@@ -17,6 +17,16 @@ from torch import distributed, nn
 from torch.utils.data.distributed import DistributedSampler
 
 
+def timefn(fn):
+    def wrap(*args):
+        t1 = time.time()
+        result = fn(*args)
+        t2 = time.time()
+        print("@timefn:{} took {} seconds".format(fn.__name__, t2-t1))
+        return result
+    return wrap
+
+
 class Trainer(object):
     def __init__(self, args, model, optimizer, writer, text_loader):
         self.args = args
@@ -45,6 +55,7 @@ class Trainer(object):
                 continue
 
     def train_epoch(self):
+        self.text_loader.resample()
         for i, (center, context, neg) in enumerate(self.text_loader):
             self.optimizer.zero_grad()
             center = center.to(self.device)
@@ -63,31 +74,43 @@ class Trainer(object):
                     loss/self.args.batch_size*self.world_size))
                 step = i // self.args.log_interval + self.epoch * (len(self.text_loader) // self.args.log_interval + 1)
                 self.writer.add_scalar('Batch loss', loss / self.args.batch_size*self.world_size, step)
-                # plot_embedding(args, model, text_loader, writer, device)
         return self.monitor_loss
 
-def evaluation(args, writer, model, device, text_loader, k):
-    if args.model_name == "sgns":
-        sim_results = evaluate(model.eval(), device, True, text_loader.word2idx)
-        ana_results = evaluate(model.eval(), device, False, text_loader.word2idx)
-    else:
-        sim_results = evaluate(model.eval(), device, True)
-        ana_results = evaluate(model.eval(), device, False)
-    sim_score, sim_known = result2dict(sim_results)
-    ana_score, ana_known = result2dict(ana_results)
-    writer.add_scalars('Similarity score', sim_score, k)
-    writer.add_scalars('Similarity known', sim_known, k)
-    writer.add_scalars('Analogy score', ana_score, k)
-    writer.add_scalars('Analogy known', ana_known, k)
+
 
 def plot_embedding(args, model, text_loader):
     if args.multi_gpu:
         model = model.module
-    vocabs = text_loader.vocabs
-    tokenized = [text_loader.word2idx[vocab] for vocab in vocabs]
-    tokenized = torch.LongTensor(tokenized)
-    features = model.center_embedding(tokenized.to(args.device))
+    words = torch.LongTensor([i for i in range(len(text_loader.vocabs))])
+    features = model.center_embedding(words.to(args.device))
     return features
+
+@timefn
+def evaluate(args, model, text_loader):
+    if args.multi_gpu:
+        model = model.module
+    words = torch.LongTensor([i for i in range(len(text_loader.vocabs))])
+    features = model.center_embedding(words.to(args.device)).detach().cpu().numpy()
+    e2 = np.matmul(features, features.T)
+    piploss = ((text_loader.dataset.ground_truth - e2)**2).mean()
+    return piploss
+
+#
+# def evaluation(args, writer, model, device, text_loader, k):
+#     if args.model_name == "sgns":
+#         sim_results = evaluate(model.eval(), device, True, text_loader.word2idx)
+#         ana_results = evaluate(model.eval(), device, False, text_loader.word2idx)
+#     else:
+#         sim_results = evaluate(model.eval(), device, True)
+#         ana_results = evaluate(model.eval(), device, False)
+#     sim_score, sim_known = result2dict(sim_results)
+#     ana_score, ana_known = result2dict(ana_results)
+#     writer.add_scalars('Similarity score', sim_score, k)
+#     writer.add_scalars('Similarity known', sim_known, k)
+#     writer.add_scalars('Analogy score', ana_score, k)
+#     writer.add_scalars('Analogy known', ana_known, k)
+
+
 
 def init_process(args):
     os.environ['MASTER_ADDR'] = 'deepspark.snu.ac.kr'
@@ -105,7 +128,7 @@ def train(args):
         init_process(args)
     device = args.device
     text_loader = TextDataLoader(args.batch_size, args.multi_node, args.num_workers, args.data_dir, args.dataset,
-                                 args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th)
+                                 args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th, args.embed_size)
     model = SGNS(len(text_loader.dataset.vocabs), args.embed_size)
     if args.load_model is not None:
         model.load_state_dict(torch.load(args.log_dir + args.load_model, map_location=lambda storage,loc: storage))
@@ -122,14 +145,14 @@ def train(args):
         trainer.epoch = epoch
         start_time = time.time()
         loss = trainer.train_epoch()
-        print('====> Epoch: {} Average loss: {:.4f} / Time: {:.4f}'.format(
-            epoch, loss / len(text_loader.dataset), time.time() - start_time))
+        piploss = evaluate(args, model, text_loader)
+        print('====> Epoch: {} Average loss: {:.4f} / PIP loss: {:.4f} / Time: {:.4f}'.format(
+            epoch, loss / len(text_loader.dataset), piploss, time.time() - start_time))
         writer.add_scalar('Epoch time', time.time() - start_time, epoch)
+        writer.add_scalar('PIP loss', piploss, epoch)
         writer.add_scalar('Train loss', loss / len(text_loader.dataset), epoch)
         if epoch % args.save_interval == 0:
-            # plot_embedding(args, model, text_loader, device, epoch, writer)
             torch.save(model.state_dict(), os.path.join(args.log_dir, 'model.pt'))
-
             features = plot_embedding(args, model, text_loader)
             writer.add_embedding(features, metadata=text_loader.vocabs, global_step=epoch)
 
