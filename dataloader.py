@@ -44,10 +44,11 @@ class DataParitioner(object):
 
 class TextDataLoader(DataLoader):
     def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size):
+        self.multinode = multinode
         self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size)
         self.vocabs = self.dataset.vocabs
         self.word2idx = self.dataset.word2idx
-        if multinode:
+        if self.multinode:
             size = distributed.get_world_size()
             batch_size = int(batch_size / float(size))
             partition_sizes = [1.0 / size for _ in range(size)]
@@ -56,7 +57,7 @@ class TextDataLoader(DataLoader):
         super(TextDataLoader, self).__init__(self.dataset, batch_size, num_workers=num_workers, shuffle=True)
 
     def resample(self):
-        if multinode:
+        if self.multinode:
             self.dataset.data.negative_sampling()
         else:
             self.dataset.negative_sampling()
