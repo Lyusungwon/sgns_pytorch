@@ -46,9 +46,9 @@ class Trainer(object):
             else:
                 continue
 
-    @timefn
     def train_epoch(self):
         self.text_loader.resample()
+        start_time = time.time()
         for i, (center, context, neg) in enumerate(self.text_loader):
             self.optimizer.zero_grad()
             center = center.to(self.device)
@@ -61,12 +61,13 @@ class Trainer(object):
             self.optimizer.step()
             self.monitor_loss += loss.item()
             if i % self.args.log_interval == 0:
-                print('Train dataset: {} [{}/{} ({:.0f}%)] Loss: {:.8f}'.format(
+                print('Train dataset: {} [{}/{} ({:.0f}%)] Loss: {:.8f} Time: {:.8f}'.format(
                     self.epoch, i * int(self.args.batch_size/self.world_size), len(self.text_loader.dataset),
                     100. * i / len(self.text_loader),
-                    loss/self.args.batch_size*self.world_size))
+                    loss/self.args.batch_size*self.world_size, time.time() - start_time))
                 step = i // self.args.log_interval + self.epoch * (len(self.text_loader) // self.args.log_interval + 1)
                 self.writer.add_scalar('Batch loss', loss / self.args.batch_size*self.world_size, step)
+                start_time = time.time()
         return self.monitor_loss
 
 
