@@ -46,6 +46,7 @@ class Trainer(object):
             else:
                 continue
 
+    @timefn
     def train_epoch(self):
         self.text_loader.resample()
         start_time = time.time()
@@ -140,7 +141,7 @@ def train(args):
         trainer.epoch = epoch
         start_time = time.time()
         loss = trainer.train_epoch()
-        if not args.multi_node or (args.multi_node and distributed.get_rank == 0):
+        if not args.multi_node or (args.multi_node and distributed.get_rank() == 0):
             piploss = evaluate(args, model, text_loader)
             print('====> Epoch: {} Average loss: {:.4f} / PIP loss: {:.4f} / Time: {:.4f}'.format(
                 epoch, loss / len(text_loader.dataset), piploss, time.time() - start_time))
