@@ -127,6 +127,7 @@ def train(args):
     if args.multi_node:
         init_process(args)
     device = args.device
+    np.random.seed(args.seed)
     text_loader = TextDataLoader(args.batch_size, args.multi_node, args.num_workers, args.data_dir, args.dataset,
                                  args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th, args.embed_size)
     model = SGNS(len(text_loader.dataset.vocabs), args.embed_size)
