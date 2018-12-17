@@ -34,7 +34,8 @@ def timefn(fn):
 
 
 class TextDataset(Dataset):
-    def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th, embedding_size):
+    def __init__(self, data_dir, dataset, window_size, ns_size, remove_th, subsam_th, embedding_size, seed):
+        np.random.seed(args.seed)
         self.dataset_dir = os.path.join(data_dir, dataset)
         data_config_list = [dataset, window_size, ns_size, remove_th, subsam_th, embedding_size]
         self.data_file = '_'.join(map(str, data_config_list)) + '.pkl'

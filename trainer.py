@@ -127,9 +127,8 @@ def train(args):
     if args.multi_node:
         init_process(args)
     device = args.device
-    np.random.seed(args.seed)
     text_loader = TextDataLoader(args.batch_size, args.multi_node, args.num_workers, args.data_dir, args.dataset,
-                                 args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th, args.embed_size)
+                                 args.window_size, args.neg_sample_size, args.remove_th, args.subsample_th, args.embed_size, args.seed)
     model = SGNS(len(text_loader.dataset.vocabs), args.embed_size)
     if args.load_model is not None:
         model.load_state_dict(torch.load(args.log_dir + args.load_model, map_location=lambda storage,loc: storage))
@@ -142,6 +141,7 @@ def train(args):
     writer = SummaryWriter(args.log_dir)
     trainer = Trainer(args, model, optimizer, writer, text_loader)
     for epoch in range(args.epochs):
+        epoch += 1
         trainer.monitor_loss = 0
         trainer.epoch = epoch
         start_time = time.time()

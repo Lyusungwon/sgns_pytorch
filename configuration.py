@@ -26,17 +26,17 @@ def get_config():
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--device', default=0, type=int)
     train_arg.add_argument('--batch-size', default=1024, type=int, help='mini-batch size (default: 64)')
-    train_arg.add_argument('--epochs', default=256, type=int, help='number of total epochs (default: 10)')
-    train_arg.add_argument('--lr', default=1e-5, type=float, help='learning rate (default: 0.0002)')
+    train_arg.add_argument('--epochs', default=300, type=int, help='number of total epochs (default: 10)')
+    train_arg.add_argument('--lr', default=1e-4, type=float, help='learning rate (default: 0.0002)')
     train_arg.add_argument('--log-interval', default=100, type=int)
-    train_arg.add_argument('--save-interval', default=64, type=int)
+    train_arg.add_argument('--save-interval', default=50, type=int)
     train_arg.add_argument('--timestamp', default=datetime.now().strftime("%y%m%d%H%M%S"), type=str)
     train_arg.add_argument('--load-model', default=None, type=str)
     train_arg.add_argument('--log-dir', default='saved/runs/', type=str)
 
     #for large dataset dataloader
     train_arg.add_argument('--multi-gpu', action='store_true')
-    train_arg.add_argument('--num-gpu', default=1, type=int)
+    train_arg.add_argument('--num-gpu', default=4, type=int)
     train_arg.add_argument('--multi-node', action='store_true')
     train_arg.add_argument('--async', action='store_true')
     train_arg.add_argument('--num-workers', default=20, type=int)
@@ -47,7 +47,7 @@ def get_config():
     args = parser.parse_args()
     args.device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
     # args.device = torch.device('cpu')
-    config_list = [args.model_name, args.embed_size, \
+    config_list = [args.model_name, args.embed_size,\
                    args.dataset, args.window_size, args.neg_sample_size,\
                    args.batch_size, args.epochs, args.lr, args.multi_gpu, args.num_gpu,
                    args.multi_node, args.async]

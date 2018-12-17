@@ -43,9 +43,9 @@ class DataParitioner(object):
 
 
 class TextDataLoader(DataLoader):
-    def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size):
+    def __init__(self, batch_size, multinode, num_workers, data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size, seed):
         self.multinode = multinode
-        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size)
+        self.dataset = TextDataset(data_dir, dataset, window_size, ns_size, remove_th, subsample_th, embedding_size, seed)
         self.vocabs = self.dataset.vocabs
         self.word2idx = self.dataset.word2idx
         if self.multinode:
