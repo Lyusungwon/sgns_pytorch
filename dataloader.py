@@ -22,6 +22,7 @@ class DataParitioner(object):
     def __init__(self, data, sizes, seed=2):
         self.data = data
         self.partitions = []
+        self.ground_truth = data.ground_truth
         rng = Random()
         rng.seed(seed)
         data_len = len(data)
