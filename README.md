@@ -36,13 +36,13 @@ python trainer.py --multi-node --backend nccl --init-method nccl://master.ip.add
 
 # Results
 ## Train loss
-![image](img/4.png){: .center-image width="50px"}
+![image](img/4.png)
 
 ## PIP loss
-![image](img/3.png){: .center-image width="50px"}
+![image](img/3.png)
 
 ## Example 1
-![image](img/2.png){: .center-image width="50px"}
+![image](img/2.png)
 
 ## Example 2
-![image](img/1.png){: .center-image width="50px"}
+![image](img/1.png)
