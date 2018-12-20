@@ -129,8 +129,6 @@ def evaluate(args, model, text_loader, eval_loader):
 
 
 def init_process(args):
-    os.environ['MASTER_ADDR'] = 'deepspark.snu.ac.kr'
-    os.environ['MASTER_PORT'] = '19372'
     distributed.init_process_group(
         backend=args.backend,
         init_method=args.init_method,

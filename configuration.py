@@ -46,7 +46,7 @@ def get_config():
     train_arg.add_argument('--num-gpu', default=4, type=int)
     train_arg.add_argument('--multi-node', action='store_true')
     train_arg.add_argument('--async', action='store_true')
-    train_arg.add_argument('--num-workers', default=20, type=int)
+    train_arg.add_argument('--num-workers', default=0, type=int)
     train_arg.add_argument('--backend', default='nccl', type=str)
     train_arg.add_argument('--init-method', default='nccl://deepspark.snu.ac.kr', type=str)
     train_arg.add_argument('--rank', type=int)
