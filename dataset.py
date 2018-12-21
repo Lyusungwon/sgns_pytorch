@@ -10,7 +10,7 @@ from collections import Counter
 import time
 from collections import defaultdict
 import nltk
-nltk.download('wordnet')
+# nltk.download('wordnet')
 
 def timefn(fn):
     def wrap(*args):
@@ -251,12 +251,3 @@ class EvalDataset(Dataset):
 
 if __name__ == '__main__':
     text_dataset = TextDataset('./data', 'harry_potter.txt', 5, 10, 5, 2e-3, 300)
-
-    # t2 = time.time()
-    # print(t2-t1)
-    # index = 1
-    # print(text_dataset.word_pairs[index])
-    # p = Pool(10)
-    # p.map(trial, range(0,100))
-    # p.close()
-    # p.join()

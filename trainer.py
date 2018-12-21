@@ -47,7 +47,6 @@ class Trainer(object):
             else:
                 continue
 
-    @timefn
     def train_epoch(self):
         self.text_loader.resample()
         start_time = time.time()
@@ -94,7 +93,6 @@ def plot_embedding(args, model, text_loader):
     features = model.center_embedding(words.to(args.device))
     return features
 
-@timefn
 def evaluate(args, model, text_loader, eval_loader):
     if args.multi_gpu:
         model = model.module
@@ -111,23 +109,6 @@ def evaluate(args, model, text_loader, eval_loader):
     piploss = ((text_loader.dataset.ground_truth - e2)**2).mean()
     return piploss
 
-#
-# def evaluation(args, writer, model, device, text_loader, k):
-#     if args.model_name == "sgns":
-#         sim_results = evaluate(model.eval(), device, True, text_loader.word2idx)
-#         ana_results = evaluate(model.eval(), device, False, text_loader.word2idx)
-#     else:
-#         sim_results = evaluate(model.eval(), device, True)
-#         ana_results = evaluate(model.eval(), device, False)
-#     sim_score, sim_known = result2dict(sim_results)
-#     ana_score, ana_known = result2dict(ana_results)
-#     writer.add_scalars('Similarity score', sim_score, k)
-#     writer.add_scalars('Similarity known', sim_known, k)
-#     writer.add_scalars('Analogy score', ana_score, k)
-#     writer.add_scalars('Analogy known', ana_known, k)
-
-
-
 def init_process(args):
     distributed.init_process_group(
         backend=args.backend,
@@ -135,7 +116,6 @@ def init_process(args):
         rank=args.rank,
         world_size=args.world_size
     )
-
 
 def train(args):
     if args.multi_node:
