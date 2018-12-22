@@ -42,10 +42,10 @@ Training of model with embedding size 50, and batch size 1024
 ## PIP loss
 ![image](img/3.png)
 
-## Example 1
+## Harry Potter Word Embedding Example 1
 ![image](img/2.png)
 
-## Example 2
+## Harry Potter Word Embedding Example 2
 ![image](img/1.png)
 
-# [Report(Kor)](report/report.pdf)
+# [[Report(Kor)]](report/report.pdf) | [[Presentation(Kor)]](report/20181218_DistributedTrainingWithPytorch.pdf)
